@@ -1,46 +1,30 @@
 'use client'
 
-import Header from '@/components/Header'
-import WalletTracker from '@/components/WalletTracker'
-import TopWallets from '@/components/TopWallets'
-import ActiveTrades from '@/components/ActiveTrades'
-import PnLChart from '@/components/PnLChart'
-import ClosedPositions from '@/components/ClosedPositions'
-import BulletPlan from '@/components/BulletPlan'
+import { topWallets } from '@/lib/data'
 
-const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-terminal-panel border border-terminal-border rounded-sm p-2.5 ${className}`}>
-    {children}
-  </div>
-)
-
-export default function Home() {
+export default function TopWallets() {
   return (
-    <div className="min-h-screen bg-terminal-bg relative">
-      {/* Scanline overlay */}
-      <div className="scanline fixed inset-0 pointer-events-none z-50" />
-
-      <Header />
-
-      <main className="p-2 flex flex-col gap-2">
-        {/* Top row — 3 panels */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <Panel><WalletTracker /></Panel>
-          <Panel><TopWallets /></Panel>
-          <Panel><ActiveTrades /></Panel>
-        </div>
-
-        {/* Chart */}
-        <Panel className="h-[220px]">
-          <PnLChart />
-        </Panel>
-
-        {/* Bottom row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <Panel><ClosedPositions /></Panel>
-          <Panel><BulletPlan /></Panel>
-        </div>
-      </main>
+    <div className="flex flex-col h-full">
+      <div className="text-[10px] tracking-widest text-terminal-green-muted border-b border-terminal-border pb-1.5 mb-2">
+        ▲ TOP WALLETS
+      </div>
+      <div className="flex flex-col gap-0 flex-1 overflow-auto">
+        {topWallets.map((w, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 py-1.5 border-b border-terminal-border/50 last:border-0 hover:bg-terminal-green/5 transition-colors px-1 rounded"
+          >
+            <span className="text-[10px] text-terminal-green-muted min-w-[12px]">{i + 1}</span>
+            <span className="text-[10px] text-terminal-green-dim flex-1 truncate">{w.addr}</span>
+            <span className="text-[9px] text-terminal-green-muted">{w.wins}W</span>
+            <span className="text-[9px] text-terminal-green-muted">{w.winRate}</span>
+            <span className="text-[10px] text-terminal-green font-bold">{w.pnl}</span>
+            <span className="text-[9px] bg-terminal-green/10 border border-terminal-green/20 text-terminal-green px-1 rounded-sm">
+              {w.streak}🔥
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
