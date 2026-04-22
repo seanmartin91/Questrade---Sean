@@ -1,34 +1,73 @@
-'use client'
+# Wallet Hunter 🎯
 
-import { closedPositions } from '@/lib/data'
+A real-time crypto wallet tracking dashboard built with **Next.js 14**, **TypeScript**, **Tailwind CSS**, and **Recharts**.
 
-export default function ClosedPositions() {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="text-[10px] tracking-widest text-terminal-green-muted border-b border-terminal-border pb-1.5 mb-2">
-        ▼ CLOSED POSITIONS
-      </div>
-      <div className="flex flex-col gap-0 flex-1 overflow-auto">
-        {closedPositions.map((p, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 py-1.5 border-b border-terminal-border/50 last:border-0 hover:bg-terminal-green/5 transition-colors px-1 rounded"
-          >
-            <span className="text-[11px] font-bold text-terminal-green flex-1">{p.token}</span>
-            <span className="text-[9px] text-terminal-green-muted">{p.duration}</span>
-            <span className={`text-[10px] font-bold ${p.pos ? 'text-terminal-green' : 'text-terminal-red'}`}>
-              {p.pnl}
-            </span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-sm ${
-              p.pos
-                ? 'bg-terminal-green/10 text-terminal-green border border-terminal-green/20'
-                : 'bg-terminal-red/10 text-terminal-red border border-terminal-red/20'
-            }`}>
-              {p.pct}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+![Wallet Hunter Dashboard](./public/preview.png)
+
+## Features
+
+- 📊 Live P&L chart with area visualization
+- 👛 Wallet tracker with smart/degen/whale tags
+- 🏆 Top wallets leaderboard with win streaks
+- ⚡ Active trade monitoring
+- 📋 Closed position history
+- 🎯 Bullet plan with net P&L target
+- 🔴 Live indicator with scanline terminal aesthetic
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+
+## Deploy to Vercel
+
+### Option 1 — One-click deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
+
+1. Push this repo to GitHub
+2. Import the repo on [vercel.com](https://vercel.com)
+3. Click **Deploy** — Vercel auto-detects Next.js, no config needed
+
+### Option 2 — Vercel CLI
+```bash
+npm i -g vercel
+vercel
+```
+
+## Project Structure
+
+```
+wallet-hunter/
+├── app/
+│   ├── globals.css       # Tailwind + scanline styles
+│   ├── layout.tsx        # Root layout with font
+│   └── page.tsx          # Main dashboard page
+├── components/
+│   ├── Header.tsx        # Top stats bar
+│   ├── WalletTracker.tsx # Wallet list panel
+│   ├── TopWallets.tsx    # Leaderboard panel
+│   ├── ActiveTrades.tsx  # Open positions panel
+│   ├── PnLChart.tsx      # Recharts area chart
+│   ├── ClosedPositions.tsx
+│   └── BulletPlan.tsx
+├── lib/
+│   └── data.ts           # Mock data + TypeScript types
+├── tailwind.config.js
+└── next.config.js
+```
+
+## Customization
+
+Replace the mock data in `lib/data.ts` with your real API calls. Each component is self-contained and accepts data from the shared lib.
+
+## Tech Stack
+
+- [Next.js 14](https://nextjs.org/) — App Router
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Recharts](https://recharts.org/) — P&L chart
+- [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono) — Terminal font
