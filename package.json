@@ -1,15 +1,14 @@
-import type { Metadata } from 'next'
-import './globals.css'
-
-export const metadata: Metadata = {
-  title: 'Wallet Hunter',
-  description: 'Real-time crypto wallet tracking dashboard',
-}
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  )
+{
+  "name": "apexbot-questrade",
+  "version": "1.0.0",
+  "description": "Questrade trading bot — Dual MA + RSI strategy",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dry-run": "DRY_RUN=true node bot.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
 }

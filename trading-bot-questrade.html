@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX — Questrade Bot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1218;
+    --border: #1a2030;
+    --accent: #3b82f6;
+    --accent2: #f43f5e;
+    --text: #dde4f0;
+    --muted: #4a5a78;
+    --green: #22d3a0;
+    --red: #f43f5e;
+    --gold: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,0.08), transparent);
+    pointer-events: none; z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
+  .logo span { color: var(--text); opacity: 0.5; font-weight: 400; font-size: 12px; letter-spacing: 2px; display: block; margin-top: 2px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+    border-radius: 100px; border: 1px solid var(--border);
+    font-family: 'Space Mono', monospace; font-size: 11px; background: var(--surface);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: all 0.3s; }
+  .dot.live { background: var(--green); box-shadow: 0 0 10px var(--green); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 26px 28px; margin-bottom: 18px; position: relative; overflow: hidden;
+  }
+  .card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.3;
+  }
+  .card-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Steps guide */
+  .steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .step {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 10px; padding: 12px 16px;
+    font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.7; color: var(--muted);
+  }
+  .step-num {
+    background: var(--accent); color: #fff; border-radius: 50%;
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  }
+  .step a { color: var(--accent); text-decoration: none; }
+  .step a:hover { text-decoration: underline; }
+  .step strong { color: var(--text); }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:580px){ .form-grid { grid-template-columns: 1fr; } }
+  .full { grid-column: 1 / -1; }
+
+  label { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px;
+    padding: 10px 14px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: 'Space Mono', monospace; }
+
+  /* Buttons */
+  .btn {
+    padding: 11px 24px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1px;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.1); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  @media(max-width:580px){ .stats { grid-template-columns: 1fr 1fr; } }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .stat-lbl { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .c-green { color: var(--green); }
+  .c-red { color: var(--red); }
+  .c-gold { color: var(--gold); }
+  .c-blue { color: var(--accent); }
+
+  /* Log */
+  .log-wrap { max-height: 280px; overflow-y: auto; }
+  .log-wrap::-webkit-scrollbar { width: 3px; }
+  .log-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .log-entry {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid rgba(26,32,48,0.8);
+    font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.5;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
+  .log-time { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .log-msg { color: var(--text); }
+  .log-msg.buy { color: var(--green); }
+  .log-msg.sell { color: var(--red); }
+  .log-msg.warn { color: var(--gold); }
+  .log-msg.info { color: var(--accent); }
+  .log-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 28px; font-family: 'Space Mono', monospace; }
+
+  /* Warning */
+  .warning {
+    background: rgba(244,63,94,0.07); border: 1px solid rgba(244,63,94,0.25);
+    border-radius: 10px; padding: 13px 16px;
+    font-size: 11px; color: #f87096; margin-bottom: 18px;
+    font-family: 'Space Mono', monospace; line-height: 1.7;
+  }
+
+  /* Strategy */
+  .strategy-box {
+    background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 10px; padding: 16px 20px;
+    font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.9; color: var(--muted);
+  }
+  .strategy-box strong { color: var(--accent); }
+
+  .flex-between { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .badge {
+    padding: 3px 10px; border-radius: 100px; font-size: 10px;
+    letter-spacing: 1px; font-weight: 600; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+  .badge-blue { background: rgba(59,130,246,0.12); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-muted { background: rgba(74,90,120,0.12); color: var(--muted); border: 1px solid var(--border); }
+
+  .divider { height: 1px; background: var(--border); margin: 4px 0 18px; }
+
+  /* Token status bar */
+  .token-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 8px; padding: 8px 14px; margin-bottom: 14px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+  }
+  .token-bar span { color: var(--muted); }
+  .token-bar strong { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      APEXBOT
+      <span>Powered by Questrade API</span>
+    </div>
+    <div class="status-pill">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">OFFLINE</span>
+    </div>
+  </header>
+
+  <div class="warning">
+    ⚠ This bot places real orders in your Questrade account. Normal commissions apply ($4.95–$9.95 per trade). Start by verifying your connection before letting it run unsupervised.
+  </div>
+
+  <!-- Setup Panel -->
+  <div id="setupPanel">
+    <div class="card">
+      <div class="card-label">01 — Get your Questrade refresh token</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>Log in to <a href="https://www.questrade.com" target="_blank">questrade.com</a> → go to <strong>My Account → API Centre</strong> (under Settings).</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>Click <strong>Generate New Token</strong>. Copy the token — it's only shown once. It acts as your refresh token.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>Paste it below. The bot will exchange it for a live access token automatically. Tokens expire in <strong>3 days</strong> — you'll need to generate a new one when it expires.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">02 — Configuration</div>
+      <div class="form-grid">
+        <div class="full">
+          <label>Questrade Refresh Token</label>
+          <input type="password" id="refreshToken" placeholder="Paste your token from API Centre…">
+          <div class="hint">Generated in Questrade → My Account → API Centre</div>
+        </div>
+        <div>
+          <label>Symbol</label>
+          <input type="text" id="symbol" value="SPY" placeholder="e.g. SPY, XIU, SHOP">
+          <div class="hint">US or Canadian stocks (use .TO suffix for TSX)</div>
+        </div>
+        <div>
+          <label>Budget (CAD $)</label>
+          <input type="number" id="budget" value="500" min="100">
+          <div class="hint">Max per position</div>
+        </div>
+        <div>
+          <label>Stop-Loss %</label>
+          <input type="number" id="stopLoss" value="3" min="1" max="20" step="0.5">
+          <div class="hint">Sell if price drops this % from entry</div>
+        </div>
+        <div>
+          <label>Check Interval (seconds)</label>
+          <input type="number" id="interval" value="120" min="60" max="3600">
+          <div class="hint">Min 60s recommended</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="startBtn" onclick="startBot()">▶ Connect &amp; Start</button>
+        <button class="btn btn-ghost" onclick="showStrategy()">View Strategy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strategy Panel -->
+  <div id="strategyPanel" style="display:none">
+    <div class="card">
+      <div class="card-label">Strategy — Dual MA + RSI Filter</div>
+      <div class="strategy-box">
+        <strong>BUY signal</strong> — all 3 must be true:<br>
+        &nbsp;&nbsp;• 20-day SMA crosses above 50-day SMA (golden cross)<br>
+        &nbsp;&nbsp;• RSI(14) is below 65 (not yet overbought)<br>
+        &nbsp;&nbsp;• No open position in the symbol<br><br>
+        <strong>SELL signal</strong> — either:<br>
+        &nbsp;&nbsp;• 20-day SMA crosses below 50-day SMA (death cross)<br>
+        &nbsp;&nbsp;• RSI(14) exceeds 75 (overbought)<br>
+        &nbsp;&nbsp;• Price falls below your configured stop-loss %<br><br>
+        <strong>Position sizing:</strong> Buys as many whole shares as the budget allows.<br>
+        <strong>Data:</strong> Daily candles via Questrade Market Data API.<br>
+        <strong>Orders:</strong> Market orders (Day), routed through Questrade's smart order router.
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="hideStrategy()">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Panel -->
+  <div id="livePanel" style="display:none">
+    <div class="token-bar">
+      <span>API Server: <strong id="apiServerDisplay">—</strong></span>
+      <span>Token expires: <strong id="tokenExpiryDisplay">—</strong></span>
+      <span>Account: <strong id="accountDisplay">—</strong></span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val c-gold" id="statPL">—</div>
+        <div class="stat-lbl">Unrealized P&amp;L</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statTrades">0</div>
+        <div class="stat-lbl">Trades</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val c-blue" id="statPosition">None</div>
+        <div class="stat-lbl">Position</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statChecks">0</div>
+        <div class="stat-lbl">Checks</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-label" style="margin:0">Activity Log</div>
+        <span class="badge badge-muted" id="nextBadge">Next check: —</span>
+      </div>
+      <div class="divider"></div>
+      <div class="log-wrap" id="logWrap">
+        <div class="log-empty">Initialising…</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-danger" onclick="stopBot()">■ Stop Bot</button>
+        <button class="btn btn-ghost" onclick="clearLog()">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── App State ────────────────────────────────────────────
+let running = false;
+let tickTimer = null;
+let countdownTimer = null;
+let auth = { accessToken: null, apiServer: null, expiresAt: null };
+let accountId = null;
+let state = { trades: 0, checks: 0, position: null };
+
+// ─── UI Helpers ───────────────────────────────────────────
+function cfg() {
+  return {
+    refreshToken: document.getElementById('refreshToken').value.trim(),
+    symbol: document.getElementById('symbol').value.trim().toUpperCase(),
+    budget: parseFloat(document.getElementById('budget').value),
+    stopLoss: parseFloat(document.getElementById('stopLoss').value) / 100,
+    interval: parseInt(document.getElementById('interval').value) * 1000,
+  };
+}
+
+function now() { return new Date().toLocaleTimeString('en-CA', { hour12: false }); }
+
+function log(msg, type = '') {
+  const wrap = document.getElementById('logWrap');
+  const empty = wrap.querySelector('.log-empty');
+  if (empty) empty.remove();
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+  el.innerHTML = `<span class="log-time">${now()}</span><span class="log-msg ${type}">${msg}</span>`;
+  wrap.insertBefore(el, wrap.firstChild);
+}
+
+function clearLog() {
+  document.getElementById('logWrap').innerHTML = '<div class="log-empty">Log cleared.</div>';
+}
+
+function setStatus(live) {
+  document.getElementById('statusDot').className = 'dot' + (live ? ' live' : '');
+  document.getElementById('statusText').textContent = live ? 'LIVE' : 'OFFLINE';
+}
+
+function updateStats() {
+  document.getElementById('statTrades').textContent = state.trades;
+  document.getElementById('statChecks').textContent = state.checks;
+  if (state.position) {
+    document.getElementById('statPosition').textContent = state.position.qty + ' shares';
+    const pl = state.position.unrealizedPL ?? null;
+    if (pl !== null) {
+      const el = document.getElementById('statPL');
+      el.textContent = (pl >= 0 ? '+' : '') + '$' + pl.toFixed(2);
+      el.className = 'stat-val ' + (pl >= 0 ? 'c-green' : 'c-red');
+    }
+  } else {
+    document.getElementById('statPosition').textContent = 'None';
+    document.getElementById('statPL').textContent = '—';
+    document.getElementById('statPL').className = 'stat-val c-gold';
+  }
+}
+
+function showStrategy() {
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('strategyPanel').style.display = 'block';
+}
+function hideStrategy() {
+  document.getElementById('strategyPanel').style.display = 'none';
+  document.getElementById('setupPanel').style.display = 'block';
+}
+
+function startCountdown(ms) {
+  let secs = Math.floor(ms / 1000);
+  clearInterval(countdownTimer);
+  const tick = () => { document.getElementById('nextBadge').textContent = `Next check: ${secs--}s`; };
+  tick();
+  countdownTimer = setInterval(() => { if (secs < 0) secs = Math.floor(ms/1000); tick(); }, 1000);
+}
+
+// ─── Questrade Auth ───────────────────────────────────────
+async function refreshAccessToken(refreshToken) {
+  const url = `https://login.questrade.com/oauth2/token?grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`;
+  const res = await fetch(url, { method: 'POST' });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Token refresh failed (${res.status}): ${txt}`);
+  }
+  const data = await res.json();
+  auth.accessToken = data.access_token;
+  auth.apiServer = data.api_server.endsWith('/') ? data.api_server.slice(0, -1) : data.api_server;
+  auth.expiresAt = Date.now() + (data.expires_in - 30) * 1000; // 30s buffer
+
+  document.getElementById('apiServerDisplay').textContent = auth.apiServer.replace('https://', '');
+  const exp = new Date(Date.now() + data.expires_in * 1000);
+  document.getElementById('tokenExpiryDisplay').textContent = exp.toLocaleTimeString('en-CA', { hour12: false });
+  return data;
+}
+
+async function ensureToken() {
+  if (!auth.accessToken || Date.now() >= auth.expiresAt) {
+    log('🔑 Refreshing access token…', 'info');
+    await refreshAccessToken(cfg().refreshToken);
+    log('✓ Token refreshed', 'info');
+  }
+}
+
+function headers() {
+  return { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' };
+}
+
+// ─── Questrade API Calls ──────────────────────────────────
+async function getAccounts() {
+  const res = await fetch(`${auth.apiServer}/v1/accounts`, { headers: headers() });
+  if (!res.ok) throw new Error(`Accounts error ${res.status}`);
+  return res.json();
+}
+
+async function getPositions(acctId) {
+  const res = await fetch(`${auth.apiServer}/v1/accounts/${acctId}/positions`, { headers: headers() });
+  if (!res.ok) throw new Error(`Positions error ${res.status}`);
+  return res.json();
+}
+
+async function getBalances(acctId) {
+  const res = await fetch(`${auth.apiServer}/v1/accounts/${acctId}/balances`, { headers: headers() });
+  if (!res.ok) throw new Error(`Balances error ${res.status}`);
+  return res.json();
+}
+
+async function searchSymbol(symbol) {
+  const res = await fetch(`${auth.apiServer}/v1/symbols/search?prefix=${symbol}&offset=0`, { headers: headers() });
+  if (!res.ok) throw new Error(`Symbol search error ${res.status}`);
+  const data = await res.json();
+  if (!data.symbols || data.symbols.length === 0) throw new Error(`Symbol not found: ${symbol}`);
+  // Prefer exact match
+  return data.symbols.find(s => s.symbol === symbol) || data.symbols[0];
+}
+
+async function getCandles(symbolId, startTime, endTime, interval = 'OneDay') {
+  const url = `${auth.apiServer}/v1/markets/candles/${symbolId}?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&interval=${interval}`;
+  const res = await fetch(url, { headers: headers() });
+  if (!res.ok) throw new Error(`Candles error ${res.status}`);
+  return res.json();
+}
+
+async function placeOrder(acctId, symbolId, symbol, qty, action) {
+  const body = {
+    accountNumber: String(acctId),
+    symbolId: symbolId,
+    quantity: qty,
+    icebergQuantity: 0,
+    limitPrice: null,
+    stopPrice: null,
+    isAllOrNone: false,
+    isAnonymous: false,
+    orderType: 'Market',
+    timeInForce: 'Day',
+    action: action,       // 'Buy' or 'Sell'
+    primaryRoute: 'AUTO',
+    secondaryRoute: 'AUTO',
+  };
+  const res = await fetch(`${auth.apiServer}/v1/accounts/${acctId}/orders`, {
+    method: 'POST', headers: headers(), body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Order error ${res.status}`);
+  }
+  return res.json();
+}
+
+// ─── Indicators ───────────────────────────────────────────
+function sma(closes, period) {
+  if (closes.length < period) return null;
+  const sl = closes.slice(-period);
+  return sl.reduce((a, b) => a + b, 0) / period;
+}
+
+function rsi(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  const sl = closes.slice(-(period + 1));
+  let gains = 0, losses = 0;
+  for (let i = 1; i < sl.length; i++) {
+    const d = sl[i] - sl[i - 1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  const avgG = gains / period, avgL = losses / period;
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
+}
+
+// ─── Core Tick ────────────────────────────────────────────
+async function tick() {
+  const c = cfg();
+  state.checks++;
+  updateStats();
+
+  try {
+    await ensureToken();
+
+    // 1. Get historical candles (last 70 trading days for indicators)
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 110); // ~110 calendar days ≈ 70+ trading days
+    const fmt = d => d.toISOString().split('.')[0] + '-05:00';
+
+    // Resolve symbolId
+    const symInfo = await searchSymbol(c.symbol);
+    const symbolId = symInfo.symbolId;
+
+    const candleData = await getCandles(symbolId, fmt(start), fmt(end));
+    const bars = candleData.candles || [];
+    if (bars.length < 52) {
+      log(`⚠ Only ${bars.length} candles — need 52+ for signals. Try a symbol with more history.`, 'warn');
+      return;
+    }
+
+    const closes = bars.map(b => b.close);
+    const price = closes[closes.length - 1];
+    const ma20 = sma(closes, 20);
+    const ma50 = sma(closes, 50);
+    const ma20p = sma(closes.slice(0, -1), 20);
+    const ma50p = sma(closes.slice(0, -1), 50);
+    const rsiVal = rsi(closes, 14);
+
+    log(`${c.symbol} $${price.toFixed(2)} | MA20=${ma20?.toFixed(2)} MA50=${ma50?.toFixed(2)} RSI=${rsiVal?.toFixed(1)}`);
+
+    // 2. Check current position
+    const posData = await getPositions(accountId);
+    const pos = (posData.positions || []).find(p => p.symbol === c.symbol && p.openQuantity > 0);
+
+    if (pos) {
+      state.position = {
+        qty: pos.openQuantity,
+        entryPrice: pos.averageEntryPrice,
+        unrealizedPL: pos.openPnl,
+      };
+      updateStats();
+
+      const pct = (price - pos.averageEntryPrice) / pos.averageEntryPrice;
+
+      // Stop-loss
+      if (pct <= -c.stopLoss) {
+        log(`🛑 Stop-loss at ${(pct*100).toFixed(2)}% — SELLING ${pos.openQuantity} × ${c.symbol}`, 'sell');
+        await placeOrder(accountId, symbolId, c.symbol, pos.openQuantity, 'Sell');
+        state.trades++;
+        state.position = null;
+        log(`✓ Sell order placed (stop-loss). Est. P&L: $${(pos.openPnl || 0).toFixed(2)}`, 'sell');
+        updateStats(); return;
+      }
+
+      // Death cross or overbought
+      const deathCross = ma20p >= ma50p && ma20 < ma50;
+      const overbought = rsiVal > 75;
+      if (deathCross || overbought) {
+        const reason = deathCross ? 'death cross' : `RSI ${rsiVal.toFixed(1)} > 75`;
+        log(`📉 SELL signal (${reason}) — selling ${pos.openQuantity} × ${c.symbol}`, 'sell');
+        await placeOrder(accountId, symbolId, c.symbol, pos.openQuantity, 'Sell');
+        state.trades++;
+        state.position = null;
+        log(`✓ Sell order placed. Est. P&L: $${(pos.openPnl || 0).toFixed(2)}`, 'sell');
+        updateStats();
+      } else {
+        log(`⟳ Holding ${pos.openQuantity} × ${c.symbol} | P&L: $${(pos.openPnl||0).toFixed(2)} (${(pct*100).toFixed(2)}%)`);
+      }
+
+    } else {
+      state.position = null;
+      updateStats();
+
+      const goldenCross = ma20p <= ma50p && ma20 > ma50;
+      const notOverbought = rsiVal < 65;
+
+      if (goldenCross && notOverbought) {
+        const balData = await getBalances(accountId);
+        const cadBal = (balData.perCurrencyBalances || []).find(b => b.currency === 'CAD');
+        const cash = cadBal ? cadBal.cash : 0;
+        const maxSpend = Math.min(c.budget, cash);
+        const shares = Math.floor(maxSpend / price);
+
+        if (shares < 1) {
+          log(`⚠ Not enough CAD cash (${cash.toFixed(2)}) to buy 1 share at $${price.toFixed(2)}`, 'warn');
+          return;
+        }
+
+        log(`📈 BUY signal — golden cross + RSI ${rsiVal.toFixed(1)} | Buying ${shares} × ${c.symbol} @ ~$${price.toFixed(2)}`, 'buy');
+        await placeOrder(accountId, symbolId, c.symbol, shares, 'Buy');
+        state.trades++;
+        log(`✓ Buy order placed: ${shares} × ${c.symbol}`, 'buy');
+        updateStats();
+      } else {
+        const why = !goldenCross ? 'no golden cross' : `RSI too high (${rsiVal.toFixed(1)})`;
+        log(`⟳ No signal — ${why}`);
+      }
+    }
+
+  } catch (err) {
+    log(`✗ ${err.message}`, 'warn');
+    if (err.message.includes('401') || err.message.includes('Token')) {
+      log('🔑 Attempting token refresh…', 'info');
+      try { await refreshAccessToken(cfg().refreshToken); log('✓ Token refreshed', 'info'); }
+      catch (e2) { log(`✗ Token refresh failed: ${e2.message}`, 'warn'); }
+    }
+  }
+
+  updateStats();
+}
+
+// ─── Start / Stop ─────────────────────────────────────────
+async function startBot() {
+  const c = cfg();
+  if (!c.refreshToken) { log('✗ Please enter your Questrade refresh token', 'warn'); return; }
+  if (!c.symbol) { log('✗ Please enter a symbol', 'warn'); return; }
+
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+
+  try {
+    // Exchange refresh token for access token
+    await refreshAccessToken(c.refreshToken);
+    log('✓ Connected to Questrade API', 'info');
+
+    // Get accounts
+    const acctData = await getAccounts();
+    const accounts = acctData.accounts || [];
+    if (accounts.length === 0) throw new Error('No accounts found on this token.');
+    const primary = accounts.find(a => a.isPrimary) || accounts[0];
+    accountId = primary.number;
+    document.getElementById('accountDisplay').textContent = `${primary.type} #${accountId}`;
+    log(`✓ Account: ${primary.type} #${accountId} (${primary.status})`, 'info');
+
+  } catch (err) {
+    log(`✗ Connection failed: ${err.message}`, 'warn');
+    btn.disabled = false;
+    btn.textContent = '▶ Connect & Start';
+    return;
+  }
+
+  running = true;
+  setStatus(true);
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('strategyPanel').style.display = 'none';
+  document.getElementById('livePanel').style.display = 'block';
+
+  log(`🚀 APEXBOT started — ${c.symbol} | Budget: $${c.budget} CAD | Stop-loss: ${(c.stopLoss*100).toFixed(1)}%`);
+  await tick();
+  startCountdown(c.interval);
+  tickTimer = setInterval(async () => { startCountdown(c.interval); await tick(); }, c.interval);
+}
+
+function stopBot() {
+  running = false;
+  clearInterval(tickTimer);
+  clearInterval(countdownTimer);
+  setStatus(false);
+  log('■ Bot stopped by user');
+  document.getElementById('setupPanel').style.display = 'block';
+  document.getElementById('livePanel').style.display = 'none';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '▶ Connect & Start';
+  document.getElementById('nextBadge').textContent = 'Next check: —';
+  accountId = null;
+  auth = { accessToken: null, apiServer: null, expiresAt: null };
+}
+</script>
+</body>
+</html>
